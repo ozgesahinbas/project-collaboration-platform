@@ -6,8 +6,7 @@ CREATE TABLE users (
     password_hash TEXT        NOT NULL,
     role          VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'instructor', 'student')),
     is_active     BOOLEAN     NOT NULL DEFAULT TRUE,
-    created_at    TIMESTAMP   NOT NULL DEFAULT NOW(),
-    updated_at    TIMESTAMP   NOT NULL DEFAULT NOW()
+
 );
 
 CREATE TABLE student_profiles (
@@ -19,8 +18,6 @@ CREATE TABLE student_profiles (
     github_url   VARCHAR(255),
     linkedin_url VARCHAR(255),
     bio          TEXT,
-    created_at   TIMESTAMP   NOT NULL DEFAULT NOW(),
-    updated_at   TIMESTAMP   NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE student_skills (
@@ -41,11 +38,6 @@ CREATE TABLE instructor_profiles (
     available_for_advising      BOOLEAN     NOT NULL DEFAULT TRUE,
 );
 
--- ============================================================
--- 5. PROJECT CATEGORIES
---    Managed by Admin. Default: Course Project,
---    TÜBİTAK Student Project, Teknofest Student Project
--- ============================================================
 CREATE TABLE project_categories (
     id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     name        VARCHAR(150) NOT NULL UNIQUE,
@@ -59,10 +51,6 @@ INSERT INTO project_categories (name, description, is_default) VALUES
     ('TÜBİTAK Student Project',   'Projects submitted under TÜBİTAK programme',  TRUE),
     ('Teknofest Student Project',  'Projects submitted for Teknofest competition', TRUE);
 
--- ============================================================
--- 6. PROJECTS
---    Created by students. Linked to a category and optional advisor.
--- ============================================================
 CREATE TABLE projects (
     id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id          UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -76,10 +64,6 @@ CREATE TABLE projects (
                                   CHECK (status IN ('open', 'closed', 'completed')),
 );
 
--- ============================================================
--- 7. PROJECT ROLES NEEDED
---    Roles a project owner is looking for (e.g. Frontend, Backend)
--- ============================================================
 CREATE TABLE project_roles_needed (
     id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id  UUID        NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -87,10 +71,6 @@ CREATE TABLE project_roles_needed (
     UNIQUE (project_id, role_name)
 );
 
--- ============================================================
--- 8. PROJECT SKILLS REQUIRED
---    Skills required for a project (tag-based)
--- ============================================================
 CREATE TABLE project_skills_required (
     id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id  UUID        NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -98,35 +78,23 @@ CREATE TABLE project_skills_required (
     UNIQUE (project_id, skill_tag)
 );
 
--- ============================================================
--- 9. PROJECT APPLICATIONS
---    Students apply to open projects; owner accepts or rejects
--- ============================================================
 CREATE TABLE project_applications (
     id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id   UUID        NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     applicant_id UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     status       VARCHAR(20) NOT NULL DEFAULT 'pending'
                              CHECK (status IN ('pending', 'accepted', 'rejected')),
-    UNIQUE (project_id, applicant_id)       -- one application per student per project
+    UNIQUE (project_id, applicant_id)       
 );
 
--- ============================================================
--- 10. TEAM MEMBERSHIPS
---     Students who have been accepted onto a project team
--- ============================================================
 CREATE TABLE team_memberships (
     id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id  UUID        NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     student_id  UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role        VARCHAR(100),               -- the role they fill on the team
+    role        VARCHAR(100),               
     UNIQUE (project_id, student_id)
 );
 
--- ============================================================
--- 11. ADVISOR REQUESTS
---     Students on TÜBİTAK / Teknofest projects request advisors
--- ============================================================
 CREATE TABLE advisor_requests (
     id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id    UUID        NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -134,13 +102,9 @@ CREATE TABLE advisor_requests (
     instructor_id UUID        NOT NULL REFERENCES instructor_profiles(id) ON DELETE CASCADE,
     status        VARCHAR(20) NOT NULL DEFAULT 'pending'
                               CHECK (status IN ('pending', 'accepted', 'rejected')),
-    UNIQUE (project_id, instructor_id)      -- one request per project per instructor
+    UNIQUE (project_id, instructor_id)      
 );
 
--- ============================================================
--- 12. ANNOUNCEMENTS
---     Published by Admin; linked to a project category
--- ============================================================
 CREATE TABLE announcements (
     id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     admin_id      UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -150,55 +114,41 @@ CREATE TABLE announcements (
     deadline_date DATE,
 );
 
--- ============================================================
--- INDEXES — speed up the most common look-ups
--- ============================================================
 
--- Users
 CREATE INDEX idx_users_role       ON users(role);
 CREATE INDEX idx_users_email      ON users(email);
 
--- Student profiles
 CREATE INDEX idx_student_user     ON student_profiles(user_id);
 CREATE INDEX idx_student_dept     ON student_profiles(department);
 
--- Student skills
 CREATE INDEX idx_student_skill    ON student_skills(student_profile_id);
 CREATE INDEX idx_skill_tag        ON student_skills(skill_tag);
 
--- Instructor profiles
 CREATE INDEX idx_instructor_user  ON instructor_profiles(user_id);
 CREATE INDEX idx_instructor_dept  ON instructor_profiles(department);
 CREATE INDEX idx_instructor_avail ON instructor_profiles(available_for_advising);
 
--- Projects
 CREATE INDEX idx_project_owner    ON projects(owner_id);
 CREATE INDEX idx_project_category ON projects(category_id);
 CREATE INDEX idx_project_advisor  ON projects(advisor_id);
 CREATE INDEX idx_project_status   ON projects(status);
 
--- Applications
 CREATE INDEX idx_app_project      ON project_applications(project_id);
 CREATE INDEX idx_app_applicant    ON project_applications(applicant_id);
 CREATE INDEX idx_app_status       ON project_applications(status);
 
--- Team memberships
 CREATE INDEX idx_member_project   ON team_memberships(project_id);
 CREATE INDEX idx_member_student   ON team_memberships(student_id);
 
--- Advisor requests
 CREATE INDEX idx_adv_req_project  ON advisor_requests(project_id);
 CREATE INDEX idx_adv_req_student  ON advisor_requests(student_id);
 CREATE INDEX idx_adv_req_instr    ON advisor_requests(instructor_id);
 CREATE INDEX idx_adv_req_status   ON advisor_requests(status);
 
--- Announcements
 CREATE INDEX idx_ann_category     ON announcements(category_id);
 CREATE INDEX idx_ann_deadline     ON announcements(deadline_date);
 
--- ============================================================
--- AUTO-UPDATE updated_at via trigger function
--- ============================================================
+
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -227,15 +177,10 @@ CREATE TRIGGER trg_announcements_updated
     BEFORE UPDATE ON announcements
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- ============================================================
--- SAMPLE SEED DATA (optional — remove in production)
--- ============================================================
 
--- Admin user (password: admin123 — replace hash in production)
 INSERT INTO users (full_name, email, password_hash, role) VALUES
     ('Admin User', 'admin@university.edu', 'REPLACE_WITH_BCRYPT_HASH', 'admin');
 
--- Sample instructor
 INSERT INTO users (full_name, email, password_hash, role) VALUES
     ('Dr. Ayşe Kaya', 'ayse.kaya@university.edu', 'REPLACE_WITH_BCRYPT_HASH', 'instructor');
 
@@ -246,7 +191,6 @@ SELECT id, 'Computer Engineering', 'Associate Professor',
        TRUE
 FROM users WHERE email = 'ayse.kaya@university.edu';
 
--- Sample student
 INSERT INTO users (full_name, email, password_hash, role) VALUES
     ('Ali Yılmaz', 'ali.yilmaz@std.university.edu', 'REPLACE_WITH_BCRYPT_HASH', 'student');
 
@@ -262,6 +206,3 @@ FROM student_profiles sp
 JOIN users u ON u.id = sp.user_id
 WHERE u.email = 'ali.yilmaz@std.university.edu';
 
--- ============================================================
--- END OF SCHEMA
--- ============================================================
