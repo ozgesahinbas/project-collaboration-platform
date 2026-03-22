@@ -1,0 +1,124 @@
+--https://dbdiagram.io/
+
+Table users {
+  id uuid [pk]
+  full_name varchar
+  email varchar [unique]
+  password text
+  role varchar
+  is_active boolean
+}
+
+Table student_profiles {
+  id uuid [pk]
+  user_id uuid [unique, ref: > users.id]
+  department varchar
+  year int
+  interests text
+  github_url varchar
+  linkedin_url varchar
+  bio text
+}
+
+Table student_skills {
+  id uuid [pk]
+  student_profile_id uuid [ref: > student_profiles.id]
+  skill_tag varchar
+
+  indexes {
+    (student_profile_id, skill_tag) [unique]
+  }
+}
+
+Table instructor_profiles {
+  id uuid [pk]
+  user_id uuid [unique, ref: > users.id]
+  department varchar
+  academic_title varchar
+  areas_of_expertise text
+  research_interests text
+  supervised_project_types text
+  available_for_advising boolean
+}
+
+Table project_categories {
+  id uuid [pk]
+  name varchar [unique]
+  description text
+  is_default boolean
+}
+
+Table projects {
+  id uuid [pk]
+  owner_id uuid [ref: > users.id]
+  category_id uuid [ref: > project_categories.id]
+  advisor_id uuid [ref: > instructor_profiles.id]
+  title varchar
+  description text
+  team_size_needed int
+  advisor_assigned boolean
+  status varchar
+}
+
+Table project_roles_needed {
+  id uuid [pk]
+  project_id uuid [ref: > projects.id]
+  role_name varchar
+
+  indexes {
+    (project_id, role_name) [unique]
+  }
+}
+
+Table project_skills_required {
+  id uuid [pk]
+  project_id uuid [ref: > projects.id]
+  skill_tag varchar
+
+  indexes {
+    (project_id, skill_tag) [unique]
+  }
+}
+
+Table project_applications {
+  id uuid [pk]
+  project_id uuid [ref: > projects.id]
+  applicant_id uuid [ref: > users.id]
+  status varchar
+
+  indexes {
+    (project_id, applicant_id) [unique]
+  }
+}
+
+Table team_memberships {
+  id uuid [pk]
+  project_id uuid [ref: > projects.id]
+  student_id uuid [ref: > users.id]
+  role varchar
+
+  indexes {
+    (project_id, student_id) [unique]
+  }
+}
+
+Table advisor_requests {
+  id uuid [pk]
+  project_id uuid [ref: > projects.id]
+  student_id uuid [ref: > users.id]
+  instructor_id uuid [ref: > instructor_profiles.id]
+  status varchar
+
+  indexes {
+    (project_id, instructor_id) [unique]
+  }
+}
+
+Table announcements {
+  id uuid [pk]
+  admin_id uuid [ref: > users.id]
+  category_id uuid [ref: > project_categories.id]
+  title varchar
+  description text
+  deadline_date date
+}
