@@ -1,0 +1,80 @@
+/* --- UPDATED SIGNUP.CSS --- */
+
+.section-label { 
+    display: block; 
+    font-size: 13px; 
+    font-weight: 600; 
+    margin-bottom: 12px; 
+}
+
+/* Role Selector Grid */
+.role-selector { 
+    display: grid; 
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 8px; 
+    margin-bottom: 20px; 
+}
+
+.role-card { 
+    border: 1px solid #eee; 
+    border-radius: 8px; 
+    padding: 12px 5px; 
+    text-align: center; 
+    cursor: pointer; 
+    background: #fff;
+}
+
+.role-card strong { display: block; font-size: 13px; }
+.role-card span { font-size: 10px; color: #999; }
+
+.role-card.active { 
+    border: 2px solid #2563eb; 
+    background: #f0f7ff; 
+}
+
+.role-card.active strong { color: #2563eb; }
+
+/* 2-Column Name Row */
+.form-row { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 12px; 
+}
+
+/* Department Dropdown Styling */
+.select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    /* Matches the First/Last Name inputs exactly */
+    background-color: #f4f4f7; 
+    font-size: 14px;
+    color: #1a1a1a;
+    appearance: none; 
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+    outline: none;
+}
+
+.select-wrapper::after {
+    content: "▼";
+    font-size: 10px;
+    color: #666;
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.custom-select:focus {
+    border-color: #2563eb;
+    background-color: #fff; 
+}
